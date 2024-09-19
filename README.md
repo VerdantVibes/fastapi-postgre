@@ -1,4 +1,3 @@
-```markdown
 # Report Generation Platform Backend Service
 
 Welcome to the backend service of our Report Generation Platform! This powerful service automates research and report generation by searching internal documents, the web, user-uploaded files, and specified URLs, producing a comprehensive report with accurate citations.

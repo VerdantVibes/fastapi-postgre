@@ -1,0 +1,27 @@
+services:
+  cadenza_db:
+    container_name: cadenza_postgresql_db
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    volumes:
+      - cadenza_db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=cadenza
+      - POSTGRES_PASSWORD=cadenza
+    expose:
+      - "5432"
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test:
+        [
+            "CMD-SHELL", "pg_isready -U cadenza"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  cadenza_db: {}
+  
