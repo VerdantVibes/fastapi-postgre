@@ -46,7 +46,7 @@ Follow these steps to run the server locally:
 
 1. **Clone the Repository**:
     ```bash
-    git clone https://github.com/ulrich1031/fastapi-azure-postgres-nginx.git
+    git clone https://github.com/VerdantVibes/fastapi-postgre.git
     ```
 
 2. **Build Docker Container**:
