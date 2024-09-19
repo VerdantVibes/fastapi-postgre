@@ -1,0 +1,101 @@
+services:
+  backend:
+    build: 
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend
+    restart: always
+    volumes:
+      - /var/log/cadenza:/var/log/cadenza
+      - backend_static:/app/static
+    expose:
+      - "8000"
+    ports:
+      - 8000:8000
+    environment:
+      - ENVIRONMENT=development
+      - DOMAIN=https://${DOMAIN}/
+      - PG_AGENT_DATABASE_URL=${PG_AGENT_DATABASE_URL}
+      - PG_MAIN_DATABASE_URL=${PG_MAIN_DATABASE_URL}
+      - AZURE_AI_SEARCH_API_KEY=${AZURE_AI_SEARCH_API_KEY}
+      - AZURE_AI_SEARCH_API_VERSION=2024-05-01-preview
+      - TAVILY_API_KEY=${TAVILY_API_KEY}
+      - EXA_API_KEY=${EXA_API_KEY}
+      - LLM_PROVIDER=azureopenai
+      - EMBEDDING_PROVIDER=azureopenai
+      - AZURE_EMBEDDING_MODEL=text-embedding-3-small
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
+      - AZURE_OPENAI_API_VERSION=2024-02-15-preview
+      - FAST_LLM_MODEL=gpt-4o-mini
+      - SMART_LLM_MODEL=gpt-4o
+      - VECTOR_RETREIVER=azureaisearch
+      - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+      - LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
+      - LANGFUSE_HOST=${LANGFUSE_HOST}
+      - DJANGO_SERVER=${DJANGO_SERVER}
+      - DJANGO_SERVER_JWT_SECRET_KEY=${DJANGO_SERVER_JWT_SECRET_KEY}
+    entrypoint: ["/app/scripts/start-backend.dev.sh"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  langfuse:
+    image: ghcr.io/langfuse/langfuse:latest
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://cadenza:cadenza@db:5432/langfuse
+      - NEXTAUTH_SECRET=8fbd1e1a3f748a56f6f2e01BQZKqdp2CV3QV5nUEsqSg1ygegLmqRygj
+      - SALT=mysalt
+      - NEXTAUTH_URL=https://langfuse.getcadenza.com
+      - TELEMETRY_ENABLED=${TELEMETRY_ENABLED:-true}
+      - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=${LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:-false}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    container_name: postgresql_db
+    restart: always
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    volumes:
+      - cadenza-ai-refresh_cadenza_db:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=cadenza
+      - POSTGRES_PASSWORD=cadenza
+    expose:
+      - "5432"
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test:
+        [
+            "CMD-SHELL", "pg_isready -U cadenza"
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    container_name: nginx
+    restart: always
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - backend
+      - langfuse
+
+volumes:
+  cadenza-ai-refresh_cadenza_db:
+    external: true
+  backend_static: {}
+  
