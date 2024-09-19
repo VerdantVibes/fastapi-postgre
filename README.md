@@ -70,7 +70,7 @@ Follow these steps to run the server locally:
 
     The server will be up at `http://localhost:8001`, and you can test the endpoints at `http://localhost:8000/docs`.
 
-![Demo Video](https://app.screencast.com/MoAlIaayeseXs)
+[Demo Video](https://app.screencast.com/MoAlIaayeseXs)
 
 ---
 
