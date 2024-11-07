@@ -1,0 +1,85 @@
+name: Deploy to agent-api.getcadenza.com
+on:
+    push:
+      branches:
+        - main
+    workflow_dispatch:
+jobs:
+    deploy:
+        runs-on: ubuntu-latest
+        environment: Development
+        env:
+            AZURE_AI_SEARCH_API_KEY: ${{ secrets.AZURE_AI_SEARCH_API_KEY }}
+            AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
+            LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+            TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+            EXA_API_KEY: ${{ secrets.EXA_API_KEY }}
+            AZURE_OPENAI_ENDPOINT: ${{ vars.AZURE_OPENAI_ENDPOINT }}
+            LANGFUSE_HOST: ${{ vars.LANGFUSE_HOST }}
+            LANGFUSE_PUBLIC_KEY: ${{ vars.LANGFUSE_PUBLIC_KEY }}
+            PG_AGENT_USER: ${{ vars.PG_AGENT_USER }}
+            PG_AGENT_PASSWORD: ${{ secrets.PG_AGENT_PASSWORD }}
+            PG_AGENT_HOST: ${{ vars.PG_AGENT_HOST }}
+            PG_AGENT_PORT: ${{ vars.PG_AGENT_PORT }}
+            PG_AGENT_DB: ${{ vars.PG_AGENT_DB }}
+            PG_MAIN_USER: ${{ vars.PG_MAIN_USER }}
+            PG_MAIN_PASSWORD: ${{ secrets.PG_MAIN_PASSWORD }}
+            PG_MAIN_HOST: ${{ vars.PG_MAIN_HOST }}
+            PG_MAIN_PORT: ${{ vars.PG_MAIN_PORT }}
+            PG_MAIN_DB: ${{ vars.PG_MAIN_DB }}
+            SERVER: ${{ vars.SERVER }}
+            SERVER_USERNAME: ${{ vars.SERVER_USERNAME }}
+            SERVER_KEY: ${{ secrets.SERVER_KEY }}
+            DJANGO_SERVER_JWT_SECRET_KEY: ${{ secrets.DJANGO_SERVER_JWT_SECRET_KEY }}
+            DJANGO_SERVER: ${{ vars.DJANGO_SERVER }}
+        steps:
+            -   name: Checkout code
+                uses: actions/checkout@v4
+                
+            -   name: Delete specified files and directories on the remote server
+                uses: appleboy/ssh-action@master
+                with:
+                    host: ${{ env.SERVER }}
+                    username: ${{ env.SERVER_USERNAME }}
+                    key: ${{ env.SERVER_KEY }}
+                    script: |
+                        rm -rf ./nginx || true
+                        rm -rf ./docker-compose.yml || true
+                        rm -rf ./db || true
+                        rm -rf ./backend || true
+                        rm -rf ./Makefile || true
+
+            -   name: Copy source files to remote server
+                uses: appleboy/scp-action@v0.1.7
+                with: 
+                    host: ${{ env.SERVER }}
+                    username: ${{ env.SERVER_USERNAME }}
+                    key: ${{ env.SERVER_KEY }}
+                    source: "nginx, docker-compose.dev.yml, db, backend, Makefile"
+                    target: "./" 
+            
+            -   name: Deploy
+                uses: appleboy/ssh-action@master
+                with:
+                    host: ${{ env.SERVER }}
+                    username: ${{ env.SERVER_USERNAME }}
+                    key: ${{ env.SERVER_KEY }}
+                    script: |
+                        mv docker-compose.dev.yml docker-compose.yml
+                        export PG_AGENT_DATABASE_URL='postgresql+asyncpg://${{env.PG_AGENT_USER}}:${{env.PG_AGENT_PASSWORD}}@${{env.PG_AGENT_HOST}}:${{env.PG_AGENT_PORT}}/${{env.PG_AGENT_DB}}'
+                        export PG_MAIN_DATABASE_URL='postgresql+asyncpg://${{env.PG_MAIN_USER}}:${{env.PG_MAIN_PASSWORD}}@${{env.PG_MAIN_HOST}}:${{env.PG_MAIN_PORT}}/${{env.PG_MAIN_DB}}'
+                        export AZURE_AI_SEARCH_API_KEY=${{ env.AZURE_AI_SEARCH_API_KEY }}
+                        export TAVILY_API_KEY=${{ env.TAVILY_API_KEY }}
+                        export EXA_API_KEY=${{ env.EXA_API_KEY }}
+                        export AZURE_OPENAI_ENDPOINT=${{ env.AZURE_OPENAI_ENDPOINT }}
+                        export AZURE_OPENAI_API_KEY=${{ env.AZURE_OPENAI_API_KEY }}
+                        export LANGFUSE_SECRET_KEY=${{ env.LANGFUSE_SECRET_KEY }}
+                        export LANGFUSE_PUBLIC_KEY=${{ env.LANGFUSE_PUBLIC_KEY }}
+                        export LANGFUSE_HOST=${{ env.LANGFUSE_HOST }}
+                        export DJANGO_SERVER=${{ env.DJANGO_SERVER }}
+                        export DJANGO_SERVER_JWT_SECRET_KEY=${{ env.DJANGO_SERVER_JWT_SECRET_KEY }}
+                        export DOMAIN=${{ env.SERVER }}
+                        docker compose down
+                        docker compose build
+                        docker compose up -d
+    
