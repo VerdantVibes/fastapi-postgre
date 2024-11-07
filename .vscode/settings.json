@@ -1,0 +1,14 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "server": "localhost",
+            "port": 5435,
+            "driver": "PostgreSQL",
+            "database": "cadenza",
+            "username": "cadenza",
+            "password": "cadenza",
+            "name": "Cadenza-Local"
+        }
+    ]
+}
