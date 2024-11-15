@@ -28,7 +28,7 @@ services:
       - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
       - AZURE_OPENAI_DEPLOYMENT_NAME=gpt-4o
       - AZURE_OPENAI_API_VERSION=2024-02-15-preview
-      - FAST_LLM_MODEL=gpt-4o-mini
+      - FAST_LLM_MODEL=gpt-4o-mini 
       - SMART_LLM_MODEL=gpt-4o
       - VECTOR_RETREIVER=azureaisearch
       - LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
